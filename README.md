@@ -1,2 +1,0 @@
-# Silnik Decyzyjny YOLO
- 
