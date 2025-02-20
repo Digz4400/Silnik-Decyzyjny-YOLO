@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 
 class Player
@@ -11,9 +13,12 @@ class Player
         this.GlobalElo = GlobalElo;
         this.Wins = Wins;
         this.Loses = Loses;
+        this.DrawMultiplayer = 0;
+        this.MatchHistoryGlobal = new List<TekkenMatch>();
+        this.MatchHistorySeason = new List<TekkenMatch>();
     }
     public string Name, Tier;
-    public int SeasonElo, GlobalElo, Wins, Loses;
+    public int SeasonElo, GlobalElo, Wins, Loses, DrawMultiplayer;
     public List<TekkenMatch> MatchHistorySeason, MatchHistoryGlobal;
     public void Print()
     {
@@ -50,21 +55,45 @@ class Player
 }
 class TekkenMatch
 {
-    TekkenMatch() { }
+    public TekkenMatch(Player p1, Player p2) 
+    {
+        this.Player1 = p1;
+        this.Player2 = p2;
+    }
     public Player Player1;
     public Player Player2;
     public string Winner;
-    public int ScorePalyer1, ScorePalyer2;
+    public int ScorePlayer1, ScorePlayer2;
+    public bool HasPlayerInMatch(Player player)
+    {
+        if (this.Player1 == player || this.Player2 == player) return true; 
+        return false;
+    }
+    public void Print()
+    {
+        Console.WriteLine("Match:");
+        Console.WriteLine("Player 1:" + this.Player1.Name + " Player 2:" + this.Player2.Name);
+        Console.Write("\n");
+    }
 }
 class TierPlusPlayers
 {
-    public TierPlusPlayers(string Tier) 
+    public TierPlusPlayers(string Tier, int Week) 
     {
+
         this.Tier = Tier;
-        this.PlayerList00 = new List<Player>();
+        this.MatchesInTier = new List<TekkenMatch>();
+        switch(Week)
+        {
+            case 1: { this.PlayerList00 = new List<Player>();break;}
+            case 2: { this.PlayerList10 = new List<Player>(); this.PlayerList01 = new List<Player>();break;}
+            case 3: { this.PlayerList20 = new List<Player>(); this.PlayerList11 = new List<Player>(); this.PlayerList02 = new List<Player>(); break; }
+            case 4: { this.PlayerList21 = new List<Player>(); this.PlayerList12 = new List<Player>(); break; }
+        }
     }
     public string Tier;
-    public List<Player> PlayerList00, PlayerList10, PlayerList01, PlayerList11, PlayerList20, PlayerList02;
+    public List<Player> PlayerList00, PlayerList10, PlayerList01, PlayerList11, PlayerList20, PlayerList02, PlayerList12, PlayerList21;
+    public List<TekkenMatch> MatchesInTier;
     public void PrintTierPlusPlayersWeek1() 
     {
         foreach (var player in this.PlayerList00)
@@ -86,6 +115,7 @@ namespace SilnikDecyzyjnyYOLO
         static int Week;
         static List<string> Tiery = new List<string>();
         static List<Player> Players = new List<Player>();
+        static List<TekkenMatch> ActualMatches = new List<TekkenMatch>();
         static void ZaladujDane()
         {
             string folderPath = @"Data\PlayerBase";
@@ -101,12 +131,7 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 }
                 FilesIterator++;
-            }
-            /*foreach (var p in Players)
-            {
-                p.Print();
-            }*/
-            
+            }  
             using (StreamReader sr = File.OpenText(@"Data\Parameters.txt"))
             {
                 string s = sr.ReadLine();
@@ -115,7 +140,6 @@ namespace SilnikDecyzyjnyYOLO
                     Week = System.Convert.ToInt32(s);
                 }
                 s = sr.ReadLine();
-                //Console.WriteLine(Week);
                 if (s != null)
                 {
                     foreach (var tier in s.Split(","))
@@ -123,13 +147,48 @@ namespace SilnikDecyzyjnyYOLO
                         Tiery.Add(tier);
                     }
                 }
-                //Console.WriteLine(Tiery[0]);
             }
             Console.WriteLine("Ładowanie danych zakończone");
         }
+        static List<TekkenMatch> DrawMatches(List<Player> DrawPool)
+        {
+            List<TekkenMatch> Result = new List<TekkenMatch>();
+
+            int CountOfPlayersInTier = DrawPool.Count;
+
+            for(int i = 0;i<CountOfPlayersInTier/2;i++)
+            {
+                List<Player> Draw = new List<Player>();
+                for (int k = 1;k<DrawPool.Count;k++)
+                {
+                    if (DrawPool[0].HasPlayerBeenPlayedSeason(DrawPool[k]))
+                    {
+
+                    }
+                    else if(DrawPool[0].HasPlayerBeenPlayedGlobal(DrawPool[k]))
+                    {
+                        Draw.Add(DrawPool[k]);
+                    }
+                    else
+                    {
+                        Draw.Add(DrawPool[k]);
+                        Draw.Add(DrawPool[k]);
+                    }
+                }
+                Random rn = new Random();
+                int rand = rn.Next(0, Draw.Count);
+                Result.Add(new TekkenMatch(DrawPool[0], Draw[rand]));               
+                DrawPool.Remove(DrawPool[0]);
+                DrawPool.Remove(Draw[rand]);
+                Draw.Clear();
+            }
+
+
+            return Result;
+        }
         static void Losowanie()
         {
-            Console.WriteLine("Losowanie rozpoczęte");
+            Console.WriteLine("Draw Start");
             switch(Week)
             {
                 case 1:
@@ -137,7 +196,7 @@ namespace SilnikDecyzyjnyYOLO
                         List<TierPlusPlayers> PlayersInTier = new List<TierPlusPlayers>();
                         foreach (var Tier in Tiery)
                         {
-                            PlayersInTier.Add(new TierPlusPlayers(Tier));
+                            PlayersInTier.Add(new TierPlusPlayers(Tier,Week));
                             foreach (var Player in Players)
                             {
                                 if(Tier == Player.Tier)
@@ -146,19 +205,15 @@ namespace SilnikDecyzyjnyYOLO
                                 }
                             }
                         }
-                        /*foreach(var print in PlayersInTier)
-                        {   
-                            Console.WriteLine(print.Tier);
-                            print.PrintTierPlusPlayersWeek1();
-                        }*/
-                        List<Player> Pool = new List<Player>();
-                        
-                        /*foreach (var pTier in PlayersInTier)
+                        foreach (var players in PlayersInTier)
                         {
-                            int licznik = 0;
-                            foreach (var )
-                        }*/
-                        
+                            players.MatchesInTier = DrawMatches(players.PlayerList00);
+                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            foreach (var match in players.MatchesInTier)
+                            {
+                                match.Print();
+                            }
+                        }
                         break;
                     }
                 case 2:
@@ -178,12 +233,12 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 default: { break; }
             }
-            Console.WriteLine("Losowanie zakończone");  
+            Console.WriteLine("Draw Ended");  
         }
         static void Main(string[] args)
         {
-            Console.WriteLine("Witaj");
-            Console.WriteLine("Załaduj Dane");
+            Console.WriteLine("Hello");
+            Console.WriteLine("Loading");
             ZaladujDane();
             Losowanie();
             Console.ReadLine();
