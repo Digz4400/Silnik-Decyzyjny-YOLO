@@ -25,11 +25,24 @@ class Player
     {
         Console.WriteLine(this.Name);
         Console.WriteLine(this.Tier);
-        Console.WriteLine(this.SeasonElo);
-        Console.WriteLine(this.GlobalElo);
-        Console.WriteLine(this.Wins);
-        Console.WriteLine(this.Loses);
+        Console.Write("Season Elo: " + this.SeasonElo + " ");
+        Console.Write("Global Elo:" + this.GlobalElo);
         Console.Write("\n");
+        Console.WriteLine(this.Wins + " - " + this.Loses);
+        Console.Write("\n");
+        Console.WriteLine("Opponets this iteration");
+        foreach(var opponent in this.MatchHistorySeason)
+        {
+            Console.Write($"{opponent.ReturnOpponent(this).Name }");
+        }
+        Console.WriteLine();
+        Console.WriteLine("Opponets in League");
+        foreach (var opponent in this.MatchHistoryGlobal)
+        {
+            Console.Write($"{opponent.ReturnOpponent(this).Name}");
+        }
+        Console.WriteLine();
+        Console.WriteLine();
     }
     public bool HasPlayerBeenPlayedSeason(Player opponent)
     {
@@ -53,6 +66,10 @@ class Player
         }
         return false;
     }
+    public Player ReturnPlayer()
+    {
+        return this;
+    }
 }
 class TekkenMatch
 {
@@ -60,6 +77,10 @@ class TekkenMatch
     {
         this.Player1 = p1;
         this.Player2 = p2;
+        this.Player1.MatchHistoryGlobal.Add(this);
+        this.Player1.MatchHistorySeason.Add(this);
+        this.Player2.MatchHistoryGlobal.Add(this);
+        this.Player2.MatchHistorySeason.Add(this);
     }
     public Player Player1;
     public Player Player2;
@@ -75,24 +96,52 @@ class TekkenMatch
         Console.WriteLine("Match:");
         Console.WriteLine("Player 1:" + this.Player1.Name + " Player 2:" + this.Player2.Name);
     }
+    public void Score(string Winner,int WinnerScore, int LoserScore)
+    {
+        this.Winner = Winner;
+        if(this.Player1.Name == this.Winner)
+        {
+            ScorePlayer1 = WinnerScore;
+            ScorePlayer2 = LoserScore;
+        }
+        else
+        {
+            ScorePlayer1 = LoserScore;
+            ScorePlayer2 = WinnerScore;
+        }
+    }
+    public Player ReturnOpponent(Player p)
+    {
+        if(this.Player1 == p)
+        {
+            return this.Player1;
+        }
+        else
+        {
+            return this.Player2;
+        }
+    }
+
 }
 class TierPlusPlayers
 {
-    public TierPlusPlayers(string Tier, int Week) 
+    public TierPlusPlayers(string Tier, int Week, int Lp) 
     {
-
+        this.lp = Lp;
         this.Tier = Tier;
         this.MatchesInTier = new List<TekkenMatch>();
         switch(Week)
         {
-            case 1: { this.PlayerList00 = new List<Player>();break;}
-            case 2: { this.PlayerList10 = new List<Player>(); this.PlayerList01 = new List<Player>();break;}
-            case 3: { this.PlayerList20 = new List<Player>(); this.PlayerList11 = new List<Player>(); this.PlayerList02 = new List<Player>(); break; }
-            case 4: { this.PlayerList21 = new List<Player>(); this.PlayerList12 = new List<Player>(); break; }
+            case 1: { this.PlayerList00 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
+            case 2: { this.PlayerList10 = new List<Player>(); this.PlayerList01 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
+            case 3: { this.PlayerList20 = new List<Player>(); this.PlayerList11 = new List<Player>(); this.PlayerList02 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
+            case 4: { this.PlayerList21 = new List<Player>(); this.PlayerList12 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
         }
     }
+    public int lp;
     public string Tier;
     public List<Player> PlayerList00, PlayerList10, PlayerList01, PlayerList11, PlayerList20, PlayerList02, PlayerList12, PlayerList21;
+    public List<Player> PlayerList;
     public List<TekkenMatch> MatchesInTier;
     public void PrintTierPlusPlayersWeek1() 
     {
@@ -116,17 +165,17 @@ namespace SilnikDecyzyjnyYOLO
         static List<string> Tiery = new List<string>();
         static List<Player> Players = new List<Player>();
         static List<TierPlusPlayers> PlayersInTier = new List<TierPlusPlayers>();
-        static void ZaladujDane()
+        static void LoadData()
         {
             string Path = @"Data\PlayerBase\Players.txt";
             using (StreamReader sr = File.OpenText(Path))
             {
                 string s;
-                while((s= sr.ReadLine())!=null)
+                while((s=sr.ReadLine())!=null)
                 {  
                     Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5]), System.Convert.ToInt32(s.Split(",")[6])));
-                    Players[Players.Count - 1].Print();
                 }
+                
             } 
             using (StreamReader sr = File.OpenText(@"Data\Parameters.txt"))
             {
@@ -144,7 +193,20 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 }
             }
-            Console.WriteLine("Ładowanie danych zakończone");
+            int LP = 1;
+            foreach (var Tier in Tiery)
+            {
+                PlayersInTier.Add(new TierPlusPlayers(Tier, Week, LP));
+                LP++;
+                foreach (var Player in Players)
+                {
+                    if (Tier == Player.Tier)
+                    {
+                        PlayersInTier[PlayersInTier.Count - 1].PlayerList.Add(Player);
+                    }
+                }
+            }
+            Console.WriteLine("Loading complite");
         }
         static List<TekkenMatch> DrawMatches(List<Player> DrawPool)
         {
@@ -182,28 +244,18 @@ namespace SilnikDecyzyjnyYOLO
 
             return Result;
         }
-        static void Losowanie()
+        static void Draw()
         {
             Console.WriteLine("Draw Start");
             switch(Week)
             {
                 case 1:
                     {
-                        foreach (var Tier in Tiery)
-                        {
-                            PlayersInTier.Add(new TierPlusPlayers(Tier,Week));
-                            foreach (var Player in Players)
-                            {
-                                if(Tier == Player.Tier)
-                                {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList00.Add(Player);
-                                }
-                            }
-                        }
                         foreach (var players in PlayersInTier)
                         {
+                            players.PlayerList00 = players.PlayerList;
                             players.MatchesInTier = DrawMatches(players.PlayerList00);
-                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
                             {
                                 match.Print();
@@ -213,26 +265,19 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 case 2:
                     {
-                        foreach (var Tier in Tiery)
-                        {
-                            PlayersInTier.Add(new TierPlusPlayers(Tier, Week));
-                            foreach (var Player in Players)
-                            {
-                                if (Tier == Player.Tier)
-                                {
-                                    if(Player.Wins == 1)
-                                    {
-                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList10.Add(Player);
-                                    }
-                                    else
-                                    {
-                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList01.Add(Player);
-                                    }
-                                }
-                            }
-                        }
                         foreach (var players in PlayersInTier)
                         {
+                            foreach (var Player in players.PlayerList)
+                            {
+                                if (Player.Wins == 1)
+                                {
+                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList10.Add(Player);
+                                }
+                                else
+                                {
+                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList01.Add(Player);
+                                }
+                            }
                             players.MatchesInTier = DrawMatches(players.PlayerList10);
                             List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
                             DrawMatchesTech = DrawMatches(players.PlayerList01);
@@ -240,7 +285,7 @@ namespace SilnikDecyzyjnyYOLO
                             {
                                 players.MatchesInTier.Add(match);
                             }
-                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
                             {
                                 match.Print();
@@ -250,30 +295,25 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 case 3:
                     {
-                        foreach (var Tier in Tiery)
-                        {
-                            PlayersInTier.Add(new TierPlusPlayers(Tier, Week));
-                            foreach (var Player in Players)
-                            {
-                                if (Tier == Player.Tier)
-                                {
-                                    if (Player.Wins == 2)
-                                    {
-                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList20.Add(Player);
-                                    }
-                                    else if (Player.Wins == 1)
-                                    {
-                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList11.Add(Player);
-                                    }
-                                    else
-                                    {
-                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList02.Add(Player);
-                                    }
-                                }
-                            }
-                        }
+
                         foreach (var players in PlayersInTier)
                         {
+                            foreach (var Player in players.PlayerList)
+                            {
+                                if (Player.Wins == 2)
+                                {
+                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList20.Add(Player);
+                                }
+                                else if (Player.Wins == 1)
+                                {
+                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList11.Add(Player);
+                                }
+                                else
+                                {
+                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList02.Add(Player);
+                                }
+
+                            }
                             players.MatchesInTier = DrawMatches(players.PlayerList20);
                             List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
                             DrawMatchesTech = DrawMatches(players.PlayerList11);
@@ -287,7 +327,7 @@ namespace SilnikDecyzyjnyYOLO
                             {
                                 players.MatchesInTier.Add(match);
                             }
-                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
                             {
                                 match.Print();
@@ -302,15 +342,128 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 default: { break; }
             }
-            Console.WriteLine("Draw Ended");  
+            Console.WriteLine();
+            Console.WriteLine("Draw Ended");
+            Console.ReadLine();
+        }
+        static void PrintPlayers(string inputtier)
+        {
+            foreach (var tier in PlayersInTier)
+            {
+                if(tier.Tier == inputtier)
+                {
+                    Console.WriteLine(tier.Tier);
+                    foreach (var players in tier.PlayerList)
+                    {
+                        players.Print();
+                    }
+                }
+            }
+        }
+        static void PlayersMenu()
+        {
+            while (true) { 
+                Console.Clear();
+                Console.WriteLine("Choose tier:");
+                Dictionary<int, string> keyValuePairs = new Dictionary<int, string>();
+                foreach (var tier in PlayersInTier)
+                {
+                    Console.WriteLine( $"{tier.lp}. {tier.Tier}");
+                    keyValuePairs.Add(tier.lp, tier.Tier);
+                }
+                Console.WriteLine("Q. Quit");
+                
+                string desision = Console.ReadLine();
+
+                try
+                {
+                    if(desision != "Q")
+                    {
+                        foreach (var d in keyValuePairs)
+                        {
+                            if(d.Key == Convert.ToInt32(desision))
+                            {
+                                PrintPlayers(d.Value);
+                                Console.WriteLine("Print any key");
+                                Console.ReadLine();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                catch { }
+
+            }
+        }
+        static void MatchMenu()
+        {
+
+        }
+        static void Menu()
+        {
+            string desision;
+            while (true) 
+            {
+                Console.Clear();
+                Console.WriteLine("Welcome to YOLO");
+                Console.WriteLine("Actual State:");
+                Console.WriteLine();
+                Console.WriteLine("Week: " + Week);
+                Console.WriteLine("Numer of Tiers: " + Tiery.Count);
+                Console.WriteLine("Numer of Players: " + Players.Count);
+                Console.WriteLine();
+                Console.WriteLine("Menu");
+                Console.WriteLine("1. Players");
+                Console.WriteLine("2. Matches");
+                Console.WriteLine("3. Draw");
+                Console.WriteLine("Q. Quit");
+                desision = Console.ReadLine();
+                switch(desision) 
+                {
+                    case "1":
+                    {
+                        PlayersMenu();
+                        break;
+                    }
+                    case "2":
+                    {
+                        break;
+                    }
+                    case "3":
+                    {
+                        Draw();
+                        foreach(var tier in Tiery)
+                        {
+                            PrintPlayers(tier);
+                        }
+
+                        break;
+                    }
+                    case "Q":
+                    {
+                       return;
+
+                    }
+                    default: 
+                    { 
+                        break; 
+                    }
+                }
+                
+            }
         }
         static void Main(string[] args)
         {
             Console.WriteLine("Hello");
             Console.WriteLine("Loading");
-            ZaladujDane();
-            Losowanie();
+            LoadData();
+            Console.WriteLine("Loading Complite");
+            Console.WriteLine("Press any key");
             Console.ReadLine();
+            Menu();
         }
     }
 }
