@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
-class Player
+class Player : ICloneable
 {
     public Player(string Name, string Tier, int SeasonElo, int GlobalElo, int Wins, int Loses, int Flag)
     {
@@ -66,11 +66,12 @@ class Player
         }
         return false;
     }
-    public Player ReturnPlayer()
+    public object Clone()
     {
-        return this;
+        return this.MemberwiseClone();
     }
 }
+
 class TekkenMatch
 {
     public TekkenMatch(Player p1, Player p2) 
@@ -175,7 +176,6 @@ namespace SilnikDecyzyjnyYOLO
                 {  
                     Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5]), System.Convert.ToInt32(s.Split(",")[6])));
                 }
-                
             } 
             using (StreamReader sr = File.OpenText(@"Data\Parameters.txt"))
             {
@@ -246,6 +246,7 @@ namespace SilnikDecyzyjnyYOLO
         }
         static void Draw()
         {
+
             Console.WriteLine("Draw Start");
             switch(Week)
             {
@@ -348,15 +349,24 @@ namespace SilnikDecyzyjnyYOLO
         }
         static void PrintPlayers(string inputtier)
         {
-            foreach (var tier in PlayersInTier)
+            Console.WriteLine(inputtier);
+            foreach (var players in Players)
             {
-                if(tier.Tier == inputtier)
+                if (players.Tier == inputtier)
                 {
-                    Console.WriteLine(tier.Tier);
-                    foreach (var players in tier.PlayerList)
-                    {
-                        players.Print();
-                    }
+                    players.Print();
+                }
+            }
+        }
+        static void PrintMatches(string inputtier)
+        {
+            Console.WriteLine(inputtier);
+            foreach (var players in PlayersInTier)
+            {
+                if (players.Tier == inputtier)
+                {
+                    foreach(var matches in  players.MatchesInTier)
+                    matches.Print();
                 }
             }
         }
@@ -400,7 +410,42 @@ namespace SilnikDecyzyjnyYOLO
         }
         static void MatchMenu()
         {
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("Choose tier:");
+                Dictionary<int, string> keyValuePairs = new Dictionary<int, string>();
+                foreach (var tier in PlayersInTier)
+                {
+                    Console.WriteLine($"{tier.lp}. {tier.Tier}");
+                    keyValuePairs.Add(tier.lp, tier.Tier);
+                }
+                Console.WriteLine("Q. Quit");
 
+                string desision = Console.ReadLine();
+
+                try
+                {
+                    if (desision != "Q")
+                    {
+                        foreach (var d in keyValuePairs)
+                        {
+                            if (d.Key == Convert.ToInt32(desision))
+                            {
+                                PrintMatches(d.Value);
+                                Console.WriteLine("Print any key");
+                                Console.ReadLine();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                catch { }
+
+            }
         }
         static void Menu()
         {
@@ -430,16 +475,12 @@ namespace SilnikDecyzyjnyYOLO
                     }
                     case "2":
                     {
+                        MatchMenu();
                         break;
                     }
                     case "3":
                     {
                         Draw();
-                        foreach(var tier in Tiery)
-                        {
-                            PrintPlayers(tier);
-                        }
-
                         break;
                     }
                     case "Q":
