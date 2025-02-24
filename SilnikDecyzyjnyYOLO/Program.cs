@@ -1,11 +1,12 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 class Player
 {
-    public Player(string Name, string Tier, int SeasonElo, int GlobalElo, int Wins, int Loses)
+    public Player(string Name, string Tier, int SeasonElo, int GlobalElo, int Wins, int Loses, int Flag)
     {
         this.Name = Name;
         this.Tier = Tier;
@@ -13,12 +14,12 @@ class Player
         this.GlobalElo = GlobalElo;
         this.Wins = Wins;
         this.Loses = Loses;
-        this.DrawMultiplayer = 0;
+        this.PlayOffFlag = Flag;
         this.MatchHistoryGlobal = new List<TekkenMatch>();
         this.MatchHistorySeason = new List<TekkenMatch>();
     }
     public string Name, Tier;
-    public int SeasonElo, GlobalElo, Wins, Loses, DrawMultiplayer;
+    public int SeasonElo, GlobalElo, Wins, Loses, PlayOffFlag;
     public List<TekkenMatch> MatchHistorySeason, MatchHistoryGlobal;
     public void Print()
     {
@@ -73,7 +74,6 @@ class TekkenMatch
     {
         Console.WriteLine("Match:");
         Console.WriteLine("Player 1:" + this.Player1.Name + " Player 2:" + this.Player2.Name);
-        Console.Write("\n");
     }
 }
 class TierPlusPlayers
@@ -115,23 +115,19 @@ namespace SilnikDecyzyjnyYOLO
         static int Week;
         static List<string> Tiery = new List<string>();
         static List<Player> Players = new List<Player>();
-        static List<TekkenMatch> ActualMatches = new List<TekkenMatch>();
+        static List<TierPlusPlayers> PlayersInTier = new List<TierPlusPlayers>();
         static void ZaladujDane()
         {
-            string folderPath = @"Data\PlayerBase";
-            int FilesIterator = 0;
-            foreach (string file in Directory.GetFiles(folderPath))
+            string Path = @"Data\PlayerBase\Players.txt";
+            using (StreamReader sr = File.OpenText(Path))
             {
-                using (StreamReader sr = File.OpenText(file))
-                {
-                    string s = sr.ReadLine(); 
-                    if (s != null)
-                    {
-                        Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5])));
-                    }
+                string s;
+                while((s= sr.ReadLine())!=null)
+                {  
+                    Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5]), System.Convert.ToInt32(s.Split(",")[6])));
+                    Players[Players.Count - 1].Print();
                 }
-                FilesIterator++;
-            }  
+            } 
             using (StreamReader sr = File.OpenText(@"Data\Parameters.txt"))
             {
                 string s = sr.ReadLine();
@@ -193,7 +189,6 @@ namespace SilnikDecyzyjnyYOLO
             {
                 case 1:
                     {
-                        List<TierPlusPlayers> PlayersInTier = new List<TierPlusPlayers>();
                         foreach (var Tier in Tiery)
                         {
                             PlayersInTier.Add(new TierPlusPlayers(Tier,Week));
@@ -218,12 +213,86 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 case 2:
                     {
-
+                        foreach (var Tier in Tiery)
+                        {
+                            PlayersInTier.Add(new TierPlusPlayers(Tier, Week));
+                            foreach (var Player in Players)
+                            {
+                                if (Tier == Player.Tier)
+                                {
+                                    if(Player.Wins == 1)
+                                    {
+                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList10.Add(Player);
+                                    }
+                                    else
+                                    {
+                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList01.Add(Player);
+                                    }
+                                }
+                            }
+                        }
+                        foreach (var players in PlayersInTier)
+                        {
+                            players.MatchesInTier = DrawMatches(players.PlayerList10);
+                            List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
+                            DrawMatchesTech = DrawMatches(players.PlayerList01);
+                            foreach(var match in DrawMatchesTech)
+                            {
+                                players.MatchesInTier.Add(match);
+                            }
+                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            foreach (var match in players.MatchesInTier)
+                            {
+                                match.Print();
+                            }
+                        }
                         break;
                     }
                 case 3:
                     {
-
+                        foreach (var Tier in Tiery)
+                        {
+                            PlayersInTier.Add(new TierPlusPlayers(Tier, Week));
+                            foreach (var Player in Players)
+                            {
+                                if (Tier == Player.Tier)
+                                {
+                                    if (Player.Wins == 2)
+                                    {
+                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList20.Add(Player);
+                                    }
+                                    else if (Player.Wins == 1)
+                                    {
+                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList11.Add(Player);
+                                    }
+                                    else
+                                    {
+                                        PlayersInTier[PlayersInTier.Count - 1].PlayerList02.Add(Player);
+                                    }
+                                }
+                            }
+                        }
+                        foreach (var players in PlayersInTier)
+                        {
+                            players.MatchesInTier = DrawMatches(players.PlayerList20);
+                            List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
+                            DrawMatchesTech = DrawMatches(players.PlayerList11);
+                            foreach (var match in DrawMatchesTech)
+                            {
+                                players.MatchesInTier.Add(match);
+                            }
+                            List<TekkenMatch> DrawMatchesTech1 = new List<TekkenMatch>();
+                            DrawMatchesTech1 = DrawMatches(players.PlayerList02);
+                            foreach (var match in DrawMatchesTech1)
+                            {
+                                players.MatchesInTier.Add(match);
+                            }
+                            Console.WriteLine("Drawing Tier: " + players.Tier);
+                            foreach (var match in players.MatchesInTier)
+                            {
+                                match.Print();
+                            }
+                        }
                         break;
                     }
                 case 4:
