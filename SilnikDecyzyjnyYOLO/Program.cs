@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
 class Player : ICloneable
 {
@@ -94,8 +97,21 @@ class TekkenMatch
     }
     public void Print()
     {
-        Console.WriteLine("Match:");
-        Console.WriteLine("Player 1:" + this.Player1.Name + " Player 2:" + this.Player2.Name);
+        //Console.WriteLine("Match:");
+        Console.Write("Player 1:" + this.Player1.Name + " Player 2:" + this.Player2.Name);
+        if(this.Winner!=null)
+        {
+            Console.Write($" Winner: {this.Winner} ");
+            if(this.ScorePlayer1 == 3)
+            {
+                Console.Write($"Score: {this.ScorePlayer1} - {this.ScorePlayer2}");
+            }
+            else
+            {
+                Console.Write($"Score: {this.ScorePlayer2} - {this.ScorePlayer1}");
+            }
+        }
+        Console.WriteLine();
     }
     public void Score(string Winner,int WinnerScore, int LoserScore)
     {
@@ -104,11 +120,15 @@ class TekkenMatch
         {
             ScorePlayer1 = WinnerScore;
             ScorePlayer2 = LoserScore;
+            this.Player1.Wins++;
+            this.Player2.Loses++;
         }
         else
         {
             ScorePlayer1 = LoserScore;
             ScorePlayer2 = WinnerScore;
+            this.Player2.Wins++;
+            this.Player1.Loses++;
         }
     }
     public Player ReturnOpponent(Player p)
@@ -365,8 +385,13 @@ namespace SilnikDecyzyjnyYOLO
             {
                 if (players.Tier == inputtier)
                 {
-                    foreach(var matches in  players.MatchesInTier)
-                    matches.Print();
+                    //foreach(var matches in  players.MatchesInTier)
+                    for(int i = 0; i < players.MatchesInTier.Count; i++)
+                    {
+                        Console.Write($"{i}. ");
+                        players.MatchesInTier[i].Print();
+                    }
+                        
                 }
             }
         }
@@ -408,6 +433,96 @@ namespace SilnikDecyzyjnyYOLO
 
             }
         }
+        static void UpadateScoreMenu(TekkenMatch match)
+        {
+            while(true) 
+            {
+                Console.Clear();
+                Console.Write($"Chosen Match: ");
+                match.Print();
+                Console.WriteLine("1. Update Score");
+                Console.WriteLine("Q. Quit");
+                string desision = Console.ReadLine();
+
+                if (desision == "Q")
+                {
+                    return;
+                }
+                else if (desision == "1")
+                {
+                    Console.Write($"Chosen Winner: 1.{match.Player1.Name} 2.{match.Player2.Name}");
+                    string chosenwinner = Console.ReadLine();
+                    while(true) 
+                    {
+                        if(chosenwinner == "1")
+                        {
+                            Console.WriteLine("Input how many round Looser Gain");
+                            int score = Convert.ToInt32(Console.ReadLine());
+                            match.Score(match.Player1.Name,3,score);
+                            break;
+                        }
+                        else if(chosenwinner == "2")
+                        {
+                            Console.WriteLine("Input how many round Looser Gain");
+                            int score = Convert.ToInt32(Console.ReadLine());
+                            match.Score(match.Player2.Name, score, 3);
+                            break;
+                        }
+
+                    }
+                }
+
+            }
+        }
+        static void MatchMenuInside(string inputtier)
+        {
+            while(true) 
+            {
+                Console.Clear();
+                Console.WriteLine($"Chosen tier: {inputtier}");
+                List<TekkenMatch> Tech = new List<TekkenMatch>();
+                Dictionary<int, TekkenMatch> keyValuePairs = new Dictionary<int, TekkenMatch>();
+                foreach (var tier in PlayersInTier)
+                {
+                    if (tier.Tier == inputtier)
+                    {
+                        Tech = tier.MatchesInTier;
+                    }
+                }
+                int lp = 0;
+                foreach (var match in Tech)
+                {
+                    Console.Write($"{lp}. ");
+                    match.Print();
+                    keyValuePairs.Add(lp, match);
+                    lp++;
+                }
+                Console.WriteLine("Q. Quit");
+                string desision = Console.ReadLine();
+                
+                try
+                {
+                    if (desision != "Q")
+                    {
+                        foreach (var d in keyValuePairs)
+                        {
+                            if (d.Key == Convert.ToInt32(desision))
+                            {
+                                UpadateScoreMenu(d.Value);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                catch { }
+
+
+            }
+        }
         static void MatchMenu()
         {
             while (true)
@@ -432,9 +547,7 @@ namespace SilnikDecyzyjnyYOLO
                         {
                             if (d.Key == Convert.ToInt32(desision))
                             {
-                                PrintMatches(d.Value);
-                                Console.WriteLine("Print any key");
-                                Console.ReadLine();
+                                MatchMenuInside(d.Value);
                             }
                         }
                     }
