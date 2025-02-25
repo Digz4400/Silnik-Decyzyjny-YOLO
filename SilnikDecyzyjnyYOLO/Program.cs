@@ -560,6 +560,23 @@ namespace SilnikDecyzyjnyYOLO
 
             }
         }
+        static void CheckNewWeek()
+        {
+            bool flag = true;
+            foreach(var tier in PlayersInTier)
+            {
+                foreach(var match in tier.MatchesInTier)
+                {
+                    if (match.Winner == null)
+                    flag = false;
+                }               
+            }
+            if(!flag)
+            {
+                Console.WriteLine("Not all matches has scores you cannot proceed with next week");
+            }
+            else { Console.WriteLine("All matches has scores you can proceed with next week"); }
+        }
         static void Menu()
         {
             string desision;
@@ -577,6 +594,7 @@ namespace SilnikDecyzyjnyYOLO
                 Console.WriteLine("1. Players");
                 Console.WriteLine("2. Matches");
                 Console.WriteLine("3. Draw");
+                CheckNewWeek();
                 Console.WriteLine("Q. Quit");
                 desision = Console.ReadLine();
                 switch(desision) 
