@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 class Player : ICloneable
 {
@@ -89,7 +92,7 @@ class TekkenMatch
     public Player Player1;
     public Player Player2;
     public string Winner;
-    public int ScorePlayer1, ScorePlayer2;
+    public int ScorePlayer1, ScorePlayer2, EloPlayer1GainSeason, EloPlayer2GainSeason, EloPlayer1GainGlobal, EloPlayer2GainGlobal;
     public bool HasPlayerInMatch(Player player)
     {
         if (this.Player1 == player || this.Player2 == player) return true; 
@@ -110,39 +113,60 @@ class TekkenMatch
             {
                 Console.Write($"Score: {this.ScorePlayer2} - {this.ScorePlayer1}");
             }
+            Console.Write("\n");
+            Console.WriteLine($"Global {this.Player1.Name}: {this.EloPlayer1GainGlobal}, {this.Player2.Name}: {this.EloPlayer2GainGlobal}");
+            Console.WriteLine($"Season {this.Player1.Name}: {this.EloPlayer1GainSeason}, {this.Player2.Name}: {this.EloPlayer2GainSeason}");
         }
         Console.WriteLine();
     }
-    public void Score(string Winner,int WinnerScore, int LoserScore)
+    public void Score(string Winner)
     {
         this.Winner = Winner;
         if(this.Player1.Name == this.Winner)
         {
-            ScorePlayer1 = WinnerScore;
-            ScorePlayer2 = LoserScore;
             this.Player1.Wins++;
             this.Player2.Loses++;
         }
         else
         {
-            ScorePlayer1 = LoserScore;
-            ScorePlayer2 = WinnerScore;
             this.Player2.Wins++;
             this.Player1.Loses++;
-        }
+        };
+        CalculateEloSeason();
+        Console.WriteLine($"{this.Player1.Name}: {this.Player1.SeasonElo},{EloPlayer1GainSeason}");
+        Console.WriteLine($"{this.Player2.Name}: {this.Player2.SeasonElo},{EloPlayer2GainSeason}");
+        Console.ReadLine();
+
     }
     public Player ReturnOpponent(Player p)
     {
         if(this.Player1 == p)
         {
-            return this.Player1;
+            return this.Player2;
         }
         else
         {
-            return this.Player2;
+            return this.Player1;
         }
     }
+    public void CalculateEloSeason()
+    {
+        int Player1OldElo = Player1.SeasonElo;
+        int Player2OldElo = Player2.SeasonElo;
+        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 400));
+        double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
+        Player1.SeasonElo = (int)(Player1OldElo + 20 * (w - p));
+        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 400));
+        w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
+        Player2.SeasonElo = (int)(Player2OldElo + 20 * (w - p));
 
+        EloPlayer1GainSeason = Player1.SeasonElo - Player1OldElo;
+        EloPlayer2GainSeason = Player2.SeasonElo - Player2OldElo;
+    }
+    public void CalculateEloGlobal(Player Winner, Player Loser)
+    {
+
+    }
 }
 class TierPlusPlayers
 {
@@ -151,13 +175,16 @@ class TierPlusPlayers
         this.lp = Lp;
         this.Tier = Tier;
         this.MatchesInTier = new List<TekkenMatch>();
-        switch(Week)
-        {
-            case 1: { this.PlayerList00 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
-            case 2: { this.PlayerList10 = new List<Player>(); this.PlayerList01 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
-            case 3: { this.PlayerList20 = new List<Player>(); this.PlayerList11 = new List<Player>(); this.PlayerList02 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
-            case 4: { this.PlayerList21 = new List<Player>(); this.PlayerList12 = new List<Player>(); this.PlayerList = new List<Player>(); break; }
-        }
+        this.PlayerList00 = new List<Player>();
+        this.PlayerList10 = new List<Player>();
+        this.PlayerList01 = new List<Player>();
+        this.PlayerList = new List<Player>();
+        this.PlayerList20 = new List<Player>();
+        this.PlayerList11 = new List<Player>(); 
+        this.PlayerList02 = new List<Player>(); 
+        this.PlayerList21 = new List<Player>();
+        this.PlayerList12 = new List<Player>();
+
     }
     public int lp;
     public string Tier;
@@ -228,6 +255,10 @@ namespace SilnikDecyzyjnyYOLO
             }
             Console.WriteLine("Loading complite");
         }
+        static void SaveData()
+        {
+
+        }
         static List<TekkenMatch> DrawMatches(List<Player> DrawPool)
         {
             List<TekkenMatch> Result = new List<TekkenMatch>();
@@ -266,7 +297,7 @@ namespace SilnikDecyzyjnyYOLO
         }
         static void Draw()
         {
-
+            Console.Clear();
             Console.WriteLine("Draw Start");
             switch(Week)
             {
@@ -274,7 +305,8 @@ namespace SilnikDecyzyjnyYOLO
                     {
                         foreach (var players in PlayersInTier)
                         {
-                            players.PlayerList00 = players.PlayerList;
+                            List<Player> Tech = new List<Player>(players.PlayerList);
+                            players.PlayerList00 = Tech;
                             players.MatchesInTier = DrawMatches(players.PlayerList00);
                             Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
@@ -288,24 +320,23 @@ namespace SilnikDecyzyjnyYOLO
                     {
                         foreach (var players in PlayersInTier)
                         {
+                            
                             foreach (var Player in players.PlayerList)
                             {
                                 if (Player.Wins == 1)
                                 {
                                     PlayersInTier[PlayersInTier.Count - 1].PlayerList10.Add(Player);
+                                    Console.WriteLine($"Win 1 - {Player.Name}");
                                 }
                                 else
                                 {
                                     PlayersInTier[PlayersInTier.Count - 1].PlayerList01.Add(Player);
+                                    Console.WriteLine($"Win 0 - {Player.Name}");
                                 }
                             }
                             players.MatchesInTier = DrawMatches(players.PlayerList10);
                             List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
                             DrawMatchesTech = DrawMatches(players.PlayerList01);
-                            foreach(var match in DrawMatchesTech)
-                            {
-                                players.MatchesInTier.Add(match);
-                            }
                             Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
                             {
@@ -458,14 +489,18 @@ namespace SilnikDecyzyjnyYOLO
                         {
                             Console.WriteLine("Input how many round Looser Gain");
                             int score = Convert.ToInt32(Console.ReadLine());
-                            match.Score(match.Player1.Name,3,score);
+                            match.ScorePlayer2 = score;
+                            match.ScorePlayer1 = 3;
+                            match.Score(match.Player1.Name);
                             break;
                         }
                         else if(chosenwinner == "2")
                         {
                             Console.WriteLine("Input how many round Looser Gain");
                             int score = Convert.ToInt32(Console.ReadLine());
-                            match.Score(match.Player2.Name, score, 3);
+                            match.ScorePlayer1 = score;
+                            match.ScorePlayer2 = 3;
+                            match.Score(match.Player2.Name);
                             break;
                         }
 
@@ -560,7 +595,7 @@ namespace SilnikDecyzyjnyYOLO
 
             }
         }
-        static void CheckNewWeek()
+        static bool CheckNewWeek()
         {
             bool flag = true;
             foreach(var tier in PlayersInTier)
@@ -571,11 +606,16 @@ namespace SilnikDecyzyjnyYOLO
                     flag = false;
                 }               
             }
-            if(!flag)
+            if(!flag || PlayersInTier[0].MatchesInTier.Count == 0)
             {
                 Console.WriteLine("Not all matches has scores you cannot proceed with next week");
             }
-            else { Console.WriteLine("All matches has scores you can proceed with next week"); }
+            else 
+            { 
+                Console.WriteLine("All matches has scores you can proceed with next week");
+                Console.WriteLine("4. Next Week");
+            }
+            return flag;
         }
         static void Menu()
         {
@@ -613,6 +653,18 @@ namespace SilnikDecyzyjnyYOLO
                     {
                         Draw();
                         break;
+                    }
+                    case "4":
+                    {
+                            if(CheckNewWeek())
+                            {
+                                foreach(var Tier in PlayersInTier)
+                                {
+                                    Tier.MatchesInTier.Clear();
+                                }
+                                Week++;
+                            }
+                            break;
                     }
                     case "Q":
                     {
