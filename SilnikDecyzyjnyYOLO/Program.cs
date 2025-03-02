@@ -656,6 +656,11 @@ namespace SilnikDecyzyjnyYOLO
             {
                 Console.WriteLine("Not all matches has scores you cannot proceed with next week");
             }
+            else if ((!flag || PlayersInTier[0].MatchesInTier.Count == 0)&& Week==4)
+            {
+                Console.WriteLine("All matches has scores you can proceed with interation");
+                Console.WriteLine("4. Next Week");
+            }
             else 
             { 
                 Console.WriteLine("All matches has scores you can proceed with next week");
@@ -709,6 +714,21 @@ namespace SilnikDecyzyjnyYOLO
                                     Tier.MatchesInTier.Clear();
                                 }
                                 Week++;
+                            }
+                            else if(CheckNewWeek()&&Week == 4)
+                            {
+                                foreach (var Tier in PlayersInTier)
+                                {
+                                    Tier.MatchesInTier.Clear();
+                                    foreach(var p in Tier.PlayerList)
+                                    {
+                                        p.Wins = 0;
+                                        p.Loses = 0;
+                                        p.MatchHistorySeason.Clear();
+                                        p.PlayOffFlag = 0;
+                                    }
+                                }
+                                Week = 1;
                             }
                             break;
                     }
