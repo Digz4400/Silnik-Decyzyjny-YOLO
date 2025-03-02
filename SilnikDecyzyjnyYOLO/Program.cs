@@ -121,6 +121,7 @@ class TekkenMatch
     }
     public void Score(string Winner)
     {
+        if(this.Winner !=null) return;
         this.Winner = Winner;
         if(this.Player1.Name == this.Winner)
         {
@@ -133,9 +134,6 @@ class TekkenMatch
             this.Player1.Loses++;
         };
         CalculateEloSeason();
-        Console.WriteLine($"{this.Player1.Name}: {this.Player1.SeasonElo},{EloPlayer1GainSeason}");
-        Console.WriteLine($"{this.Player2.Name}: {this.Player2.SeasonElo},{EloPlayer2GainSeason}");
-        Console.ReadLine();
 
     }
     public Player ReturnOpponent(Player p)
@@ -165,7 +163,17 @@ class TekkenMatch
     }
     public void CalculateEloGlobal(Player Winner, Player Loser)
     {
+        int Player1OldElo = Player1.GlobalElo;
+        int Player2OldElo = Player2.GlobalElo;
+        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 400));
+        double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
+        Player1.GlobalElo = (int)(Player1OldElo + 20 * (w - p));
+        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 400));
+        w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
+        Player2.GlobalElo = (int)(Player2OldElo + 20 * (w - p));
 
+        EloPlayer1GainSeason = Player1.GlobalElo - Player1OldElo;
+        EloPlayer2GainSeason = Player2.GlobalElo - Player2OldElo;
     }
 }
 class TierPlusPlayers
@@ -284,8 +292,15 @@ namespace SilnikDecyzyjnyYOLO
                         Draw.Add(DrawPool[k]);
                     }
                 }
+                Console.WriteLine($"{DrawPool[0].Name}:");
+                foreach(var p in Draw)
+                {
+                    Console.Write(p.Name);
+                }
+                Console.ReadLine();
                 Random rn = new Random();
                 int rand = rn.Next(0, Draw.Count);
+                Console.WriteLine($"{DrawPool[0]}: {Draw[rand]}");
                 Result.Add(new TekkenMatch(DrawPool[0], Draw[rand]));               
                 DrawPool.Remove(DrawPool[0]);
                 DrawPool.Remove(Draw[rand]);
@@ -323,20 +338,27 @@ namespace SilnikDecyzyjnyYOLO
                             
                             foreach (var Player in players.PlayerList)
                             {
-                                if (Player.Wins == 1)
+                                if(Player.Tier == players.Tier)
                                 {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList10.Add(Player);
-                                    Console.WriteLine($"Win 1 - {Player.Name}");
-                                }
-                                else
-                                {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList01.Add(Player);
-                                    Console.WriteLine($"Win 0 - {Player.Name}");
+                                    if (Player.Wins == 1)
+                                    {
+                                        players.PlayerList10.Add(Player);
+                                        Console.WriteLine($"Win 1 - {Player.Name}");
+                                    }
+                                    else
+                                    {
+                                        players.PlayerList01.Add(Player);
+                                        Console.WriteLine($"Win 0 - {Player.Name}");
+                                    }
                                 }
                             }
                             players.MatchesInTier = DrawMatches(players.PlayerList10);
                             List<TekkenMatch> DrawMatchesTech = new List<TekkenMatch>();
                             DrawMatchesTech = DrawMatches(players.PlayerList01);
+                            foreach (var match in DrawMatchesTech)
+                            {
+                                players.MatchesInTier.Add(match);
+                            }
                             Console.WriteLine("\n"+"Drawing Tier: " + players.Tier);
                             foreach (var match in players.MatchesInTier)
                             {
@@ -354,15 +376,15 @@ namespace SilnikDecyzyjnyYOLO
                             {
                                 if (Player.Wins == 2)
                                 {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList20.Add(Player);
+                                    players.PlayerList20.Add(Player);
                                 }
                                 else if (Player.Wins == 1)
                                 {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList11.Add(Player);
+                                    players.PlayerList11.Add(Player);
                                 }
                                 else
                                 {
-                                    PlayersInTier[PlayersInTier.Count - 1].PlayerList02.Add(Player);
+                                    players.PlayerList02.Add(Player);
                                 }
 
                             }
