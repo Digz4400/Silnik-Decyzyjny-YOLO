@@ -114,8 +114,6 @@ class TekkenMatch
                 Console.Write($"Score: {this.ScorePlayer2} - {this.ScorePlayer1}");
             }
             Console.Write("\n");
-            Console.WriteLine($"Global {this.Player1.Name}: {this.EloPlayer1GainGlobal}, {this.Player2.Name}: {this.EloPlayer2GainGlobal}");
-            Console.WriteLine($"Season {this.Player1.Name}: {this.EloPlayer1GainSeason}, {this.Player2.Name}: {this.EloPlayer2GainSeason}");
         }
         Console.WriteLine();
     }
@@ -127,13 +125,18 @@ class TekkenMatch
         {
             this.Player1.Wins++;
             this.Player2.Loses++;
+            if (this.Player1.Wins == 2 && this.Player1.Loses == 0) this.Player1.PlayOffFlag = 1;
+            if (this.Player2.Wins == 0 && this.Player2.Loses == 2) this.Player2.PlayOffFlag = 1;
         }
         else
         {
             this.Player2.Wins++;
             this.Player1.Loses++;
+            if (this.Player2.Wins == 2 && this.Player2.Loses == 0) this.Player2.PlayOffFlag = 1;
+            if (this.Player1.Wins == 0 && this.Player1.Loses == 2) this.Player1.PlayOffFlag = 1;
         };
         CalculateEloSeason();
+        CalculateEloGlobal();
 
     }
     public Player ReturnOpponent(Player p)
@@ -161,7 +164,7 @@ class TekkenMatch
         EloPlayer1GainSeason = Player1.SeasonElo - Player1OldElo;
         EloPlayer2GainSeason = Player2.SeasonElo - Player2OldElo;
     }
-    public void CalculateEloGlobal(Player Winner, Player Loser)
+    public void CalculateEloGlobal()
     {
         int Player1OldElo = Player1.GlobalElo;
         int Player2OldElo = Player2.GlobalElo;
@@ -192,11 +195,12 @@ class TierPlusPlayers
         this.PlayerList02 = new List<Player>(); 
         this.PlayerList21 = new List<Player>();
         this.PlayerList12 = new List<Player>();
-
+        this.PlayerListWeek4Down = new List<Player>();
+        this.PlayerListWeek4Up = new List<Player>();
     }
     public int lp;
     public string Tier;
-    public List<Player> PlayerList00, PlayerList10, PlayerList01, PlayerList11, PlayerList20, PlayerList02, PlayerList12, PlayerList21;
+    public List<Player> PlayerList00, PlayerList10, PlayerList01, PlayerList11, PlayerList20, PlayerList02, PlayerList12, PlayerList21, PlayerListWeek4Down, PlayerListWeek4Up;
     public List<Player> PlayerList;
     public List<TekkenMatch> MatchesInTier;
     public void PrintTierPlusPlayersWeek1() 
@@ -292,15 +296,8 @@ namespace SilnikDecyzyjnyYOLO
                         Draw.Add(DrawPool[k]);
                     }
                 }
-                Console.WriteLine($"{DrawPool[0].Name}:");
-                foreach(var p in Draw)
-                {
-                    Console.Write(p.Name);
-                }
-                Console.ReadLine();
                 Random rn = new Random();
                 int rand = rn.Next(0, Draw.Count);
-                Console.WriteLine($"{DrawPool[0]}: {Draw[rand]}");
                 Result.Add(new TekkenMatch(DrawPool[0], Draw[rand]));               
                 DrawPool.Remove(DrawPool[0]);
                 DrawPool.Remove(Draw[rand]);
@@ -411,7 +408,34 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 case 4:
                     {
+                        foreach (var players in PlayersInTier)
+                        {
+                            foreach (var Player in players.PlayerList)
+                            {
+                                if (Player.Wins == 2 && Player.PlayOffFlag == 1)
+                                {
+                                    players.PlayerListWeek4Up.Add(Player);
+                                }
+                                if (Player.Loses == 2 && Player.PlayOffFlag == 1)
+                                {
+                                    players.PlayerListWeek4Down.Add(Player);
+                                }
+                            }
+                        }
 
+                        for (int i=0;i<PlayersInTier.Count-1;i++)
+                        {
+                            List<Player> TechDrawPool = new List<Player>();
+                            foreach(var p in PlayersInTier[i].PlayerListWeek4Down)
+                            {
+                                TechDrawPool.Add(p);
+                            }
+                            foreach (var p in PlayersInTier[i+1].PlayerListWeek4Up)
+                            {
+                                TechDrawPool.Add(p);
+                            }
+                            PlayersInTier[i].MatchesInTier = DrawMatches(TechDrawPool);
+                        }
                         break;
                     }
                 default: { break; }
