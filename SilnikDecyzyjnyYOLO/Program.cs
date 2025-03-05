@@ -36,6 +36,7 @@ class Player : ICloneable
         Console.Write("\n");
         Console.WriteLine(this.Wins + " - " + this.Loses);
         Console.Write("\n");
+        Console.WriteLine($"Playoff Flag: {this.PlayOffFlag}");
         Console.WriteLine("Opponets this iteration");
         foreach(var opponent in this.MatchHistorySeason)
         {
@@ -154,12 +155,16 @@ class TekkenMatch
     {
         int Player1OldElo = Player1.SeasonElo;
         int Player2OldElo = Player2.SeasonElo;
-        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 400));
+        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 200));
+        Console.WriteLine($"p: {p}");
+        Console.ReadLine();
         double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
-        Player1.SeasonElo = (int)(Player1OldElo + 20 * (w - p));
-        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 400));
+        Player1.SeasonElo = (int)(Player1OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
+        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 200));
+        Console.WriteLine($"p: {p}");
+        Console.ReadLine();
         w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
-        Player2.SeasonElo = (int)(Player2OldElo + 20 * (w - p));
+        Player2.SeasonElo = (int)(Player2OldElo + 40 * (w - p)*(1+0.5*Math.Abs(w-p)));
 
         EloPlayer1GainSeason = Player1.SeasonElo - Player1OldElo;
         EloPlayer2GainSeason = Player2.SeasonElo - Player2OldElo;
@@ -168,15 +173,19 @@ class TekkenMatch
     {
         int Player1OldElo = Player1.GlobalElo;
         int Player2OldElo = Player2.GlobalElo;
-        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 400));
+        double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 200));
+        Console.WriteLine($"p: {p}");
+        Console.ReadLine();
         double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
-        Player1.GlobalElo = (int)(Player1OldElo + 20 * (w - p));
-        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 400));
+        Player1.GlobalElo = (int)(Player1OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
+        p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 200));
+        Console.WriteLine($"p: {p}");
+        Console.ReadLine();
         w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
-        Player2.GlobalElo = (int)(Player2OldElo + 20 * (w - p));
+        Player2.GlobalElo = (int)(Player2OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
 
-        EloPlayer1GainSeason = Player1.GlobalElo - Player1OldElo;
-        EloPlayer2GainSeason = Player2.GlobalElo - Player2OldElo;
+        EloPlayer1GainGlobal = Player1.GlobalElo - Player1OldElo;
+        EloPlayer2GainGlobal = Player2.GlobalElo - Player2OldElo;
     }
 }
 class TierPlusPlayers
@@ -270,6 +279,36 @@ namespace SilnikDecyzyjnyYOLO
         static void SaveData()
         {
 
+        }
+        static List<TekkenMatch> DrawMatchesWeek4(List<Player> DrawPoolUP, List<Player> DrawPoolDown)
+        {
+            List<TekkenMatch> result = new List<TekkenMatch>();
+            for (int j = 0; j < DrawPoolUP.Count; j++)
+            {
+                List<Player> drawPool = new List<Player>();
+                for (int i = 0; i < DrawPoolDown.Count; i++)
+                {
+                    if (DrawPoolUP[j].HasPlayerBeenPlayedSeason(DrawPoolDown[i]))
+                    {
+
+                    }
+                    else if (DrawPoolUP[j].HasPlayerBeenPlayedGlobal(DrawPoolDown[i]))
+                    {
+                        drawPool.Add(DrawPoolDown[i]);
+                    }
+                    else
+                    {
+                        drawPool.Add(DrawPoolDown[i]);
+                        drawPool.Add(DrawPoolDown[i]);
+                    }
+                }
+                Console.WriteLine(drawPool.Count);
+                Random rn = new Random();
+                int rand = rn.Next(0, drawPool.Count);
+                result.Add(new TekkenMatch(DrawPoolUP[j], drawPool[rand]));
+                DrawPoolDown.Remove(drawPool[rand]);
+            }
+            return result;
         }
         static List<TekkenMatch> DrawMatches(List<Player> DrawPool)
         {
@@ -422,19 +461,13 @@ namespace SilnikDecyzyjnyYOLO
                                 }
                             }
                         }
-
-                        for (int i=0;i<PlayersInTier.Count-1;i++)
+                        for(int i=0;i< PlayersInTier.Count-1;i++)
                         {
-                            List<Player> TechDrawPool = new List<Player>();
-                            foreach(var p in PlayersInTier[i].PlayerListWeek4Down)
+                            PlayersInTier[i].MatchesInTier = DrawMatchesWeek4(PlayersInTier[i].PlayerListWeek4Down, PlayersInTier[i+1].PlayerListWeek4Up);
+                            foreach(var match in PlayersInTier[i].MatchesInTier)
                             {
-                                TechDrawPool.Add(p);
+                                match.Print();
                             }
-                            foreach (var p in PlayersInTier[i+1].PlayerListWeek4Up)
-                            {
-                                TechDrawPool.Add(p);
-                            }
-                            PlayersInTier[i].MatchesInTier = DrawMatches(TechDrawPool);
                         }
                         break;
                     }
