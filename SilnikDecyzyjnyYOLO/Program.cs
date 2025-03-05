@@ -24,7 +24,7 @@ class Player : ICloneable
         this.MatchHistoryGlobal = new List<TekkenMatch>();
         this.MatchHistorySeason = new List<TekkenMatch>();
     }
-    public string Name, Tier;
+    public string Name, Tier, Result;
     public int SeasonElo, GlobalElo, Wins, Loses, PlayOffFlag;
     public List<TekkenMatch> MatchHistorySeason, MatchHistoryGlobal;
     public void Print()
@@ -37,6 +37,7 @@ class Player : ICloneable
         Console.WriteLine(this.Wins + " - " + this.Loses);
         Console.Write("\n");
         Console.WriteLine($"Playoff Flag: {this.PlayOffFlag}");
+        Console.WriteLine($"Result: {this.Result}");
         Console.WriteLine("Opponets this iteration");
         foreach(var opponent in this.MatchHistorySeason)
         {
@@ -136,6 +137,11 @@ class TekkenMatch
             if (this.Player2.Wins == 2 && this.Player2.Loses == 0) this.Player2.PlayOffFlag = 1;
             if (this.Player1.Wins == 0 && this.Player1.Loses == 2) this.Player1.PlayOffFlag = 1;
         };
+        if (this.Player1.Wins == 3) this.Player1.Result = "Up";
+        if (this.Player1.Loses == 3) this.Player1.Result = "Down";
+        if (this.Player2.Wins == 3) this.Player2.Result = "Up";
+        if (this.Player2.Loses == 3) this.Player2.Result = "Down";
+
         CalculateEloSeason();
         CalculateEloGlobal();
 
