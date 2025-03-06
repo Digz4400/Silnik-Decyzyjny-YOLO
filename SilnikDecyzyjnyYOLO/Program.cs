@@ -162,13 +162,9 @@ class TekkenMatch
         int Player1OldElo = Player1.SeasonElo;
         int Player2OldElo = Player2.SeasonElo;
         double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 200));
-        Console.WriteLine($"p: {p}");
-        Console.ReadLine();
         double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
         Player1.SeasonElo = (int)(Player1OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
         p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 200));
-        Console.WriteLine($"p: {p}");
-        Console.ReadLine();
         w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
         Player2.SeasonElo = (int)(Player2OldElo + 40 * (w - p)*(1+0.5*Math.Abs(w-p)));
 
@@ -180,13 +176,9 @@ class TekkenMatch
         int Player1OldElo = Player1.GlobalElo;
         int Player2OldElo = Player2.GlobalElo;
         double p = 1.0 / (1 + Math.Pow(10, (Player2OldElo - Player1OldElo) / 200));
-        Console.WriteLine($"p: {p}");
-        Console.ReadLine();
         double w = (double)this.ScorePlayer1 / (this.ScorePlayer1 + this.ScorePlayer2);
         Player1.GlobalElo = (int)(Player1OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
         p = 1.0 / (1 + Math.Pow(10, (Player1OldElo - Player2OldElo) / 200));
-        Console.WriteLine($"p: {p}");
-        Console.ReadLine();
         w = (double)this.ScorePlayer2 / (this.ScorePlayer1 + this.ScorePlayer2);
         Player2.GlobalElo = (int)(Player2OldElo + 40 * (w - p) * (1 + 0.5 * Math.Abs(w - p)));
 
@@ -308,7 +300,6 @@ namespace SilnikDecyzyjnyYOLO
                         drawPool.Add(DrawPoolDown[i]);
                     }
                 }
-                Console.WriteLine(drawPool.Count);
                 Random rn = new Random();
                 int rand = rn.Next(0, drawPool.Count);
                 result.Add(new TekkenMatch(DrawPoolUP[j], drawPool[rand]));
@@ -485,12 +476,17 @@ namespace SilnikDecyzyjnyYOLO
         }
         static void PrintPlayers(string inputtier)
         {
+            Console.Clear();
             Console.WriteLine(inputtier);
-            foreach (var players in Players)
+
+            foreach (var players in PlayersInTier)
             {
                 if (players.Tier == inputtier)
                 {
-                    players.Print();
+                    foreach(var p in players.PlayerList)
+                    {
+                        p.Print();
+                    }
                 }
             }
         }
@@ -745,31 +741,70 @@ namespace SilnikDecyzyjnyYOLO
                         break;
                     }
                     case "4":
-                    {
-                            if(CheckNewWeek())
+                    {    
+                        if(CheckNewWeek() && Week == 4)
+                        {
+                            foreach (var Tier in PlayersInTier)
                             {
-                                foreach(var Tier in PlayersInTier)
-                                {
-                                    Tier.MatchesInTier.Clear();
-                                }
-                                Week++;
+                                Tier.MatchesInTier.Clear();
                             }
-                            else if(CheckNewWeek()&&Week == 4)
+                            for (int i = 0; i < PlayersInTier.Count - 1; i++)
                             {
-                                foreach (var Tier in PlayersInTier)
+                                for (int j = 0; j< PlayersInTier[i].PlayerList.Count; j++)
                                 {
-                                    Tier.MatchesInTier.Clear();
-                                    foreach(var p in Tier.PlayerList)
+                                    if (PlayersInTier[i].PlayerList[j].Result == "Down")
                                     {
-                                        p.Wins = 0;
-                                        p.Loses = 0;
-                                        p.MatchHistorySeason.Clear();
-                                        p.PlayOffFlag = 0;
+                                        var temp = PlayersInTier[i].PlayerList[j];
+                                        PlayersInTier[i + 1].PlayerList.Add(temp);
+                                    }
+                                    if (PlayersInTier[i + 1].PlayerList[j].Result == "Up")
+                                    {
+                                        var temp = PlayersInTier[i + 1].PlayerList[j];
+                                        PlayersInTier[i].PlayerList.Add(temp);
                                     }
                                 }
-                                Week = 1;
                             }
-                            break;
+                            for (int i = 0; i < PlayersInTier.Count - 1; i++)
+                            {
+                                for (int j = PlayersInTier[i].PlayerList.Count - 1; j >= 0; j--)
+                                {
+                                    if (PlayersInTier[i].PlayerList[j].Result == "Down")
+                                    {
+                                        PlayersInTier[i].PlayerList.RemoveAt(j);
+                                    }
+                                }
+
+                                for (int j = PlayersInTier[i + 1].PlayerList.Count - 1; j >= 0; j--)
+                                {
+                                    if (PlayersInTier[i + 1].PlayerList[j].Result == "Up")
+                                    {
+                                        PlayersInTier[i + 1].PlayerList.RemoveAt(j);
+                                    }
+                                }
+                            }
+                            foreach (var Tier in PlayersInTier)
+                            {
+                                Tier.MatchesInTier.Clear();
+                                foreach(var p in Tier.PlayerList)
+                                {
+                                    p.Wins = 0;
+                                    p.Loses = 0;
+                                    p.MatchHistorySeason.Clear();
+                                    p.PlayOffFlag = 0;
+                                    p.Result = null;
+                                }
+                            }
+                            Week = 1;
+                        }
+                        else if (CheckNewWeek())
+                        {
+                            foreach (var Tier in PlayersInTier)
+                            {
+                                Tier.MatchesInTier.Clear();
+                            }
+                            Week++;
+                        }
+                        break;
                     }
                     case "Q":
                     {
