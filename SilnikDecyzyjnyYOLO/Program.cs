@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Numerics;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
@@ -23,6 +24,10 @@ class Player : ICloneable
         this.PlayOffFlag = Flag;
         this.MatchHistoryGlobal = new List<TekkenMatch>();
         this.MatchHistorySeason = new List<TekkenMatch>();
+    }
+    public Player(string Name)
+    {
+        this.Name = Name;
     }
     public string Name, Tier, Result;
     public int SeasonElo, GlobalElo, Wins, Loses, PlayOffFlag;
@@ -82,7 +87,7 @@ class Player : ICloneable
 
 class TekkenMatch
 {
-    public TekkenMatch(Player p1, Player p2) 
+    public TekkenMatch(Player p1, Player p2)
     {
         this.Player1 = p1;
         this.Player2 = p2;
@@ -90,6 +95,11 @@ class TekkenMatch
         this.Player1.MatchHistorySeason.Add(this);
         this.Player2.MatchHistoryGlobal.Add(this);
         this.Player2.MatchHistorySeason.Add(this);
+    }
+    public TekkenMatch(Player p1, Player p2, int a)
+    {
+        this.Player1 = p1;
+        this.Player2 = p2;
     }
     public Player Player1;
     public Player Player2;
@@ -234,15 +244,38 @@ namespace SilnikDecyzyjnyYOLO
         static List<TierPlusPlayers> PlayersInTier = new List<TierPlusPlayers>();
         static void LoadData()
         {
-            string Path = @"Data\PlayerBase\Players.txt";
-            using (StreamReader sr = File.OpenText(Path))
+            string Path = @"Data\PlayerBase\";
+            foreach (string file in Directory.GetFiles(Path))
             {
-                string s;
-                while((s=sr.ReadLine())!=null)
-                {  
-                    Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5]), System.Convert.ToInt32(s.Split(",")[6])));
-                }
-            } 
+                using (StreamReader sr = File.OpenText(file))
+                {
+                    string s = sr.ReadLine();
+                    if (s != null)
+                    {
+                        Players.Add(new Player(s.Split(",")[0], s.Split(",")[1], System.Convert.ToInt32(s.Split(",")[2]), System.Convert.ToInt32(s.Split(",")[3]), System.Convert.ToInt32(s.Split(",")[4]), System.Convert.ToInt32(s.Split(",")[5]), System.Convert.ToInt32(s.Split(",")[6])));
+                        if(s.Split(",")[7]!=null)
+                        {
+                            Players[Players.Count - 1].Result = s.Split(",")[7];
+                        }
+                    }
+                    s = sr.ReadLine();
+                    if (s != null)
+                    {
+                        for(int i=0;i<s.Split(",").Length-1;i++)
+                        {
+                            Players[Players.Count - 1].MatchHistorySeason.Add(new TekkenMatch(new Player(s.Split(",")[i]), Players[Players.Count - 1], 1));
+                        }
+                    }
+                    s = sr.ReadLine();
+                    if (s != null)
+                    {
+                        for (int i = 0; i < s.Split(",").Length - 1; i++)
+                        {
+                            Players[Players.Count - 1].MatchHistoryGlobal.Add(new TekkenMatch(new Player(s.Split(",")[i]), Players[Players.Count - 1],1));
+                        }
+                    }
+                }     
+            }
             using (StreamReader sr = File.OpenText(@"Data\Parameters.txt"))
             {
                 string s = sr.ReadLine();
@@ -272,11 +305,90 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 }
             }
+            Path = @"Data\Matches\";
+            LP = 0;
+            foreach (string file in Directory.GetFiles(Path))
+            {
+                using (StreamReader sr = File.OpenText(file))
+                {
+                    string s;
+                    while((s=sr.ReadLine())!=null)
+                    {
+                        if(s.Split("_").Length == 2)
+                        {
+                            PlayersInTier[LP].MatchesInTier.Add(new TekkenMatch(PlayersInTier[LP].PlayerList.FirstOrDefault(p => p.Name == s.Split("_")[0]), PlayersInTier[LP].PlayerList.FirstOrDefault(p => p.Name == s.Split("_")[1]), 1));
+                        }
+                        else 
+                        {
+                            PlayersInTier[LP].MatchesInTier.Add(new TekkenMatch(PlayersInTier[LP].PlayerList.FirstOrDefault(p => p.Name == s.Split("_")[0]), PlayersInTier[LP].PlayerList.FirstOrDefault(p => p.Name == s.Split("_")[1]), 1));
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].Winner = s.Split("_")[2];
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].ScorePlayer1 = Convert.ToInt32(s.Split("_")[3]);
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].ScorePlayer2 = Convert.ToInt32(s.Split("_")[4]);
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].EloPlayer1GainSeason = Convert.ToInt32(s.Split("_")[5]);
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].EloPlayer2GainSeason = Convert.ToInt32(s.Split("_")[6]);
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].EloPlayer1GainGlobal = Convert.ToInt32(s.Split("_")[7]);
+                            PlayersInTier[LP].MatchesInTier[PlayersInTier[LP].MatchesInTier.Count - 1].EloPlayer2GainGlobal = Convert.ToInt32(s.Split("_")[8]);
+                        }
+                    }
+                }
+                LP++;
+            }
             Console.WriteLine("Loading complite");
         }
         static void SaveData()
         {
+            string[] FolderPath = Directory.GetFiles(@"Data\PlayerBase\");
+            foreach (string file in FolderPath) { File.Delete(file); }
+            foreach (var tier in PlayersInTier)
+            {
+                foreach(var player in tier.PlayerList)
+                {
+                    using (File.Create(@"Data\PlayerBase\" + player.Name + ".txt")) { }
+                    using (var sr = new StreamWriter(@"Data\PlayerBase\" + player.Name + ".txt"))
+                    {
+                        string line = player.Name + "," + player.Tier + "," + player.SeasonElo + "," + player.GlobalElo + "," + player.Wins + "," + player.Loses + "," + player.PlayOffFlag + "," + player.Result;
+                        sr.WriteLine(line);
+                        line = null;
+                        foreach(var m in player.MatchHistorySeason)
+                        {
+                            line += m.ReturnOpponent(player).Name + ",";
+                        }
+                        if(line!=null)
+                        line.Remove(line.Length - 1);
+                        sr.WriteLine(line);
+                        line = null;
+                        foreach (var m in player.MatchHistoryGlobal)
+                        {
+                            line += m.ReturnOpponent(player).Name + ",";
+                        }
+                        if (line != null)
+                        line.Remove(line.Length - 1);
+                        sr.WriteLine(line);
+                    }
+                }
 
+            }
+            FolderPath = Directory.GetFiles(@"Data\Matches\");
+            foreach (string file in FolderPath) { File.Delete(file); }
+            int lp = 0;
+            foreach (var tier in PlayersInTier)
+            {
+                using (File.Create(@"Data\Matches\" + lp +"_" + tier.Tier + ".txt")) { }
+                
+                foreach (var match in tier.MatchesInTier)
+                {
+                    using (var sr = new StreamWriter(@"Data\Matches\" + lp + "_" + tier.Tier + ".txt", true))
+                    {
+                        string line = match.Player1.Name + "_" + match.Player2.Name;
+                        if(match.Winner!=null)
+                        {
+                            line += "_" + match.Winner + "_" + match.ScorePlayer1 + "_" + match.ScorePlayer2 + "_" + match.EloPlayer1GainSeason + "_" + match.EloPlayer2GainSeason + "_" + match.EloPlayer1GainGlobal + "_" + match.EloPlayer2GainGlobal;
+                        }
+                        sr.WriteLine(line);
+                    }
+                }
+                lp++;
+            }
         }
         static List<TekkenMatch> DrawMatchesWeek4(List<Player> DrawPoolUP, List<Player> DrawPoolDown)
         {
@@ -470,6 +582,7 @@ namespace SilnikDecyzyjnyYOLO
                     }
                 default: { break; }
             }
+            SaveData();
             Console.WriteLine();
             Console.WriteLine("Draw Ended");
             Console.ReadLine();
