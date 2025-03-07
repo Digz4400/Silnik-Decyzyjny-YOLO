@@ -286,9 +286,9 @@ namespace SilnikDecyzyjnyYOLO
                 s = sr.ReadLine();
                 if (s != null)
                 {
-                    foreach (var tier in s.Split(","))
+                    for(int i=0; i<s.Split(",").Length-1;i++)
                     {
-                        Tiery.Add(tier);
+                        Tiery.Add(s.Split(",")[i]);
                     }
                 }
             }
@@ -366,7 +366,7 @@ namespace SilnikDecyzyjnyYOLO
                         sr.WriteLine(line);
                     }
                 }
-
+                
             }
             FolderPath = Directory.GetFiles(@"Data\Matches\");
             foreach (string file in FolderPath) { File.Delete(file); }
@@ -389,6 +389,18 @@ namespace SilnikDecyzyjnyYOLO
                 }
                 lp++;
             }
+            using (var sr = new StreamWriter(@"Data\Parameters.txt"))
+            {
+                sr.WriteLine(Week);
+                string line = null;
+                foreach (var tier in PlayersInTier)
+                {
+                    line += tier.Tier + ",";
+                }
+                line.Remove(line.Length - 1);
+                sr.WriteLine(line);
+            }
+
         }
         static List<TekkenMatch> DrawMatchesWeek4(List<Player> DrawPoolUP, List<Player> DrawPoolDown)
         {

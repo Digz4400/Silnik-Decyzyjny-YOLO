@@ -1,0 +1,14 @@
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\bin\Release\net7.0\SilnikDecyzyjnyYOLO.exe
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\bin\Release\net7.0\SilnikDecyzyjnyYOLO.deps.json
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\bin\Release\net7.0\SilnikDecyzyjnyYOLO.runtimeconfig.json
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\bin\Release\net7.0\SilnikDecyzyjnyYOLO.dll
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\bin\Release\net7.0\SilnikDecyzyjnyYOLO.pdb
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.AssemblyInfoInputs.cache
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.AssemblyInfo.cs
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.csproj.CoreCompileInputs.cache
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.dll
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\refint\SilnikDecyzyjnyYOLO.dll
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.pdb
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\SilnikDecyzyjnyYOLO.genruntimeconfig.cache
+C:\Users\Adam2\Desktop\Tekken\Silnik-Decyzyjny-YOLO\SilnikDecyzyjnyYOLO\obj\Release\net7.0\ref\SilnikDecyzyjnyYOLO.dll
