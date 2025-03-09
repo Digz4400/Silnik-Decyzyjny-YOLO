@@ -669,6 +669,7 @@ namespace SilnikDecyzyjnyYOLO
                 catch { }
 
             }
+            SaveData();
         }
         static void UpadateScoreMenu(TekkenMatch match)
         {
@@ -763,6 +764,7 @@ namespace SilnikDecyzyjnyYOLO
 
 
             }
+            SaveData();
         }
         static void MatchMenu()
         {
@@ -800,6 +802,7 @@ namespace SilnikDecyzyjnyYOLO
                 catch { }
 
             }
+            SaveData();
         }
         static bool CheckNewWeek()
         {
@@ -853,6 +856,7 @@ namespace SilnikDecyzyjnyYOLO
                     case "1":
                     {
                         PlayersMenu();
+
                         break;
                     }
                     case "2":
@@ -862,7 +866,25 @@ namespace SilnikDecyzyjnyYOLO
                     }
                     case "3":
                     {
-                        Draw();
+                        bool flag = true;
+                        foreach(var Tier in PlayersInTier)
+                        {
+                            if(Tier.MatchesInTier.Count>0)
+                            {
+                                flag = false;
+                            }
+                        }
+                        if(!flag)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Games are drew, you cannot draw again until next week");
+                            Console.WriteLine("Press enter");
+                            Console.ReadLine();
+                        }
+                        else
+                        {
+                            Draw();
+                        }
                         break;
                     }
                     case "4":
@@ -953,6 +975,7 @@ namespace SilnikDecyzyjnyYOLO
             Console.WriteLine("Press any key");
             Console.ReadLine();
             Menu();
+            SaveData();
         }
     }
 }
